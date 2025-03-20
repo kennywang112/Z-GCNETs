@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 
-
 class NScaler(object):
     def transform(self, data):
         return data

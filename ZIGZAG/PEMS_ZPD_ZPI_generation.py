@@ -5,10 +5,7 @@ import networkx as nx
 import zigzag.zigzagtools as zzt
 from scipy.spatial.distance import squareform
 import dionysus as d
-import matplotlib.pyplot as plt
 import time
-from ripser import ripser
-from persim import plot_diagrams, PersImage
 path = os.getcwd()
 
 def split_data_by_ratio(data, val_ratio, test_ratio):

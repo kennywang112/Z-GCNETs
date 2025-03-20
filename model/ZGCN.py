@@ -5,10 +5,14 @@ from scipy.spatial.distance import pdist,squareform
 from DNN import CNN
 import numpy as np
 
+# TLSGCNCNN: 透過圖卷積方式來提取時間依賴性資訊，時間資訊的建模方式更接近於空間圖結構
+# TFLSGCNCNN: 直接對時間特徵進行轉換，捨棄時間圖卷積，計算更簡單、參數更少
 
 # ZPI * Spatial GC Layer || ZPI * Temporal GC Layer
 class TLSGCNCNN(nn.Module):
+
     def __init__(self, dim_in, dim_out, window_len, link_len, embed_dim):
+        
         super(TLSGCNCNN, self).__init__()
         self.link_len = link_len
         self.weights_pool = nn.Parameter(torch.FloatTensor(embed_dim, link_len, dim_in, int(dim_out/2)))
@@ -19,6 +23,7 @@ class TLSGCNCNN(nn.Module):
         self.bias_pool = nn.Parameter(torch.FloatTensor(embed_dim, dim_out))
         self.T = nn.Parameter(torch.FloatTensor(window_len))
         self.cnn = CNN(int(dim_out / 2))
+
     def forward(self, x, x_window, node_embeddings, zigzag_PI):
         #S1: Laplacian construction
         node_num = node_embeddings.shape[0]
@@ -58,18 +63,22 @@ class TLSGCNCNN(nn.Module):
 # ZPI * Spatial GC Layer || ZPI * Feature Transformation (on Temporal Features)
 # with less parameters
 class TFLSGCNCNN(nn.Module):
+    
     def __init__(self, dim_in, dim_out, window_len, link_len, embed_dim):
+
         super(TFLSGCNCNN, self).__init__()
         self.link_len = link_len
         self.weights_pool = nn.Parameter(torch.FloatTensor(embed_dim, link_len, dim_in, int(dim_out/2)))
-        if (dim_in-1)%16 ==0:
+        if (dim_in-1) % 16 == 0:
             self.weights_window = nn.Parameter(torch.FloatTensor(embed_dim, 1, int(dim_out / 2)))
         else:
             self.weights_window = nn.Parameter(torch.FloatTensor(embed_dim, int(dim_in/2), int(dim_out / 2)))
         self.bias_pool = nn.Parameter(torch.FloatTensor(embed_dim, dim_out))
         self.T = nn.Parameter(torch.FloatTensor(window_len))
         self.cnn = CNN(int(dim_out / 2))
+
     def forward(self, x, x_window, node_embeddings, zigzag_PI):
+
         #S1: Laplacian construction
         node_num = node_embeddings.shape[0]
         supports = F.softmax(F.relu(torch.mm(node_embeddings, node_embeddings.transpose(0, 1))), dim=1)
