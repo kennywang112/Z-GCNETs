@@ -4,6 +4,7 @@ from ZGCNCELL import NLSGCRNCNNCell
 
 
 class NNLSDCRNNCNN(nn.Module):
+    
     def __init__(self, node_num, dim_in, dim_out, link_len, embed_dim, num_layers=1, window_len = 12):
 
         super(NNLSDCRNNCNN, self).__init__()
