@@ -1,4 +1,4 @@
-./model/tda_data/*
-./model/data/*
-./model/predictions/*
-./token_datasets/*
+./model/tda_data
+./model/data
+./model/predictions
+./token_datasets
