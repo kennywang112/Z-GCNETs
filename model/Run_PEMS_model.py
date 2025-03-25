@@ -18,18 +18,19 @@ from metrics import MAE_torch
 # dataset and
 Mode = 'train'
 DEBUG = 'True'
-DATASET = 'PEMSD4' #PEMSD4 or PEMSD8
+DATASET = 'PEMSD4' # PEMSD4 or PEMSD8
 DEVICE = 'cuda:0'
 MODEL = 'ZGCNETs'
-H_type = 'H1' #dimension of zigzag PI
+H_type = 'H1' # dimension of zigzag PI
 data_type = '4' # 4 or 8 for PEMSDX dataset
 
-#get configuration
-config_file = '{}_{}.conf'.format(DATASET, MODEL)
+# get configuration
+config_file = f'./model/{DATASET}_{MODEL}.conf'
 config = configparser.ConfigParser()
 config.read(config_file)
 print("++++++++++++++")
-print(config_file) # using PEMSD4_AGCRN.conf as "config"!
+print(config.sections())
+print(config_file)
 print("++++++++++++++")
 #-----------------------------------------------------------------------------#
 
@@ -51,7 +52,7 @@ args.add_argument('--debug', default=DEBUG, type=eval)
 args.add_argument('--model', default=MODEL, type=str)
 args.add_argument('--cuda', default=True, type=bool)
 # from data, these below information could be found in .conf file
-#data
+# data
 args.add_argument('--val_ratio', default=config['data']['val_ratio'], type=float)
 args.add_argument('--test_ratio', default=config['data']['test_ratio'], type=float)
 args.add_argument('--lag', default=config['data']['lag'], type=int)
@@ -143,7 +144,8 @@ log_dir = os.path.join(current_dir,'experiments', args.dataset, current_time)
 args.log_dir = log_dir
 
 #start training
-trainer = Trainer(model, loss, optimizer, train_loader, val_loader, test_loader, scaler,
+trainer = Trainer(model, loss, optimizer, train_loader, 
+                  val_loader, test_loader, scaler,
                   args, lr_scheduler=lr_scheduler)
 if args.mode == 'train':
     trainer.train()

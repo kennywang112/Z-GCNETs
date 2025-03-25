@@ -1,0 +1,7 @@
+zigzag == 0.2.2
+torch == 1.7.1
+gudhi == 3.3.0
+networkx == 2.3.0
+dionysus == 2.0.8
+ripser == 0.5.2
+persim == 0.1.1

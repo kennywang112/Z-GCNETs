@@ -12,23 +12,23 @@ import os
 
 path = os.getcwd()
 
-#%% Parameters 
+# %% Parameters 
 nameFolderNet = path + 'File'
 NVertices = 6 # Number of vertices
 scaleParameter = 0.4 # Scale Parameter (Maximum) # the maximal edge weight #
 maxDimHoles = 2 # Maximum Dimension of Holes (It means.. 0 and 1)
 sizeWindow = 12 # Number of Graphs 
 
-#%% Open all sets (point-cloud/Graphs)
+# %% Open all sets (point-cloud/Graphs)
 print("Loading data...") # Beginning
 Graphs = []
 for i in range(0,sizeWindow):
-    #edgesList = np.loadtxt(nameFolderNet+str(i+1)+".txt") # Load data
+    # edgesList = np.loadtxt(nameFolderNet+str(i+1)+".txt") # Load data
     edgesList = np.loadtxt(nameFolderNet+str(i)+".csv", delimiter=',') # Load data
     Graphs.append(edgesList)
 print("  --- End Loading...") # Ending
 
-#%% Plot Graph
+# %% Plot Graph
 GraphsNetX = []
 plt.figure(num=None, figsize=(16, 1.5), dpi=80, facecolor='w', edgecolor='k')
 for i in range(0,sizeWindow):
@@ -44,7 +44,7 @@ for i in range(0,sizeWindow):
     plt.title(str(i))
     pos = nx.circular_layout(GraphsNetX[i])
     nx.draw(GraphsNetX[i], pos, node_size=15, edge_color='r') 
-    #nx.draw_circular(GraphsNetX[i], node_size=15, edge_color='r') 
+    # nx.draw_circular(GraphsNetX[i], node_size=15, edge_color='r') 
     labels = nx.get_edge_attributes(GraphsNetX[i], 'weight')
     for lab in labels:
         labels[lab] = round(labels[lab],2)
@@ -52,7 +52,7 @@ for i in range(0,sizeWindow):
 
 plt.savefig('IMGS/Graphs.pdf', bbox_inches='tight')
 
-#%% Building unions and computing distance matrices 
+# %% Building unions and computing distance matrices 
 print("Building unions and computing distance matrices...") # Beginning
 GUnions = []
 MDisGUnions = []
@@ -91,7 +91,7 @@ for i in range(0,sizeWindow-1):
     MDisGUnions.append(pDisAux) # To save distance matrix
 print("  --- End unions...") # Ending
 
-#%% To perform Ripser computations
+# %% To perform Ripser computations
 print("Computing Vietoris-Rips complexes...") # Beginning
 GVRips = []
 for i in range(0,sizeWindow-1):
@@ -99,8 +99,8 @@ for i in range(0,sizeWindow-1):
     GVRips.append(ripsAux)
 print("  --- End Vietoris-Rips computation") # Ending
 
-#%% Shifting filtrations...
-print("Shifting filtrations...") #Beginning
+# %% Shifting filtrations...
+print("Shifting filtrations...") # Beginning
 GVRips_shift = []
 GVRips_shift.append(GVRips[0]) # Shift 0... original rips01 
 for i in range(1,sizeWindow-1):
@@ -108,24 +108,24 @@ for i in range(1,sizeWindow-1):
     GVRips_shift.append(shiftAux)
 print("  --- End shifting...") # Ending
 
-#%% To Combine complexes
+# %% To Combine complexes
 print("Combining complexes...") # Beginning
 completeGVRips = zzt.complex_union(GVRips[0], GVRips_shift[1]) 
 for i in range(2,sizeWindow-1):
     completeGVRips = zzt.complex_union(completeGVRips, GVRips_shift[i]) 
 print("  --- End combining") # Ending
 
-#%% To compute the time intervals of simplices
+# %% To compute the time intervals of simplices
 print("Determining time intervals...") # Beginning
 time_intervals = zzt.build_zigzag_times(completeGVRips, NVertices, sizeWindow)
 print("  --- End time") # Beginning
 
-#%% To compute Zigzag persistence
+# %% To compute Zigzag persistence
 print("Computing Zigzag homology...") # Beginning
 G_zz, G_dgms, G_cells = d.zigzag_homology_persistence(completeGVRips, time_intervals)
 print("  --- End Zigzag") # Beginning
 
-#%% To show persistence intervals
+# %% To show persistence intervals
 print("Persistence intervals:")
 print("++++++++++++++++++++++")
 print(G_dgms)
@@ -159,16 +159,16 @@ for i,dgm in enumerate(G_dgms):
         print(matBarcode)
         for j in range(0,matBarcode.shape[0]):
             plt.plot(matBarcode[j], [j,j], 'b')
-        #my_xticks = [0,1,2,3,4,5,6,7,8,9,10,11]
-        #plt.xticks(x, my_xticks)
+        # my_xticks = [0,1,2,3,4,5,6,7,8,9,10,11]
+        # plt.xticks(x, my_xticks)
         plt.xticks(np.arange(12))
         plt.grid(axis='x', linestyle='-')
         plt.savefig('IMGS/BoxPlot'+str(i)+'.pdf', bbox_inches='tight')
         plt.show() 
         
-#%%
+# %%
 
-#%%
+# %%
 for s in GVRips[0]:
     print(s)
 

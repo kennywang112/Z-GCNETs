@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
+from ZIGZAG.PEMS_ZPD_ZPI_generation import zigzag_persistence_diagrams, zigzag_persistence_images, nested_zigzag_persistence_diagrams
 
 def Add_Window_Horizon(data, window=3, horizon=1, single=False):
     '''

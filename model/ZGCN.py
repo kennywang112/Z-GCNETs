@@ -8,7 +8,7 @@ import numpy as np
 # TLSGCNCNN: 透過圖卷積方式來提取時間依賴性資訊，時間資訊的建模方式更接近於空間圖結構
 # TFLSGCNCNN: 直接對時間特徵進行轉換，捨棄時間圖卷積，計算更簡單、參數更少
 
-# ZPI * Spatial GC Layer || ZPI * Temporal GC Layer
+# ZPI * Spatial GC Layer || ZPI * Temporal GC Layer 沒有用到
 class TLSGCNCNN(nn.Module):
 
     def __init__(self, dim_in, dim_out, window_len, link_len, embed_dim):
@@ -85,6 +85,7 @@ class TFLSGCNCNN(nn.Module):
         support_set = [torch.eye(node_num).to(supports.device), supports]
 
         # S2: Laplacianlink
+        # supports=[K, N, N]
         for k in range(2, self.link_len):
             support_set.append(torch.mm(supports, support_set[k-1]))
         supports = torch.stack(support_set, dim=0)
@@ -113,10 +114,31 @@ class TFLSGCNCNN(nn.Module):
         x_wconv = torch.matmul(x_w, self.T)  # B, N, dim_out/2
 
         # S5: zigzag persistence representation learning
-        topo_cnn = self.cnn(zigzag_PI) # B, dim_out/2, dim_out/2
+        topo_cnn = self.cnn(zigzag_PI) # B, dim_out/2
+        # example
+        # x_gconv = torch.tensor([
+        #     [  # batch 0
+        #         [1.0, 2.0, 3.0],  # node 0 的三個特徵
+        #         [4.0, 5.0, 6.0]   # node 1
+        #     ]
+        # ])
+
+        # topo_cnn: shape = (B=1, O=3)
+        # topo_cnn = torch.tensor([
+        #     [10.0, 100.0, 1000.0]  # batch 0
+        # ])
+        # 每個節點特徵都乘上batch的拓樸cnn輸出，每個window都有一個ZPI
+        # 意義: 每個特徵
+        # Node 0:
+        #   [1.0 * 10.0,   2.0 * 100.0,   3.0 * 1000.0] = [10.0, 200.0, 3000.0]
+        # Node 1:
+        #   [4.0 * 10.0,   5.0 * 100.0,   6.0 * 1000.0] = [40.0, 500.0, 6000.0]
+
+        # 一個batch的對稱拓樸輸出會分別作用在時間和空間特徵上
         x_tgconv = torch.einsum('bno,bo->bno', x_gconv, topo_cnn)
         x_twconv = torch.einsum('bno,bo->bno', x_wconv, topo_cnn)
 
         # S6: combination operation
         x_gwconv = torch.cat([x_tgconv, x_twconv], dim = -1) + bias # B, N, dim_out
+
         return x_gwconv

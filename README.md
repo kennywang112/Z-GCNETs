@@ -12,4 +12,3 @@ For the zigzag persistence image (ZPI) of PeMS (i.e., PeMSD4 and PeMSD8):
 2. download ZPI (including PeMSD4_ZPI_{alpha = 0.3}, PeMSD4_ZPI_{alpha = 0.5}, and PeMSD8_ZPI_{alpha = 0.3}) at https://www.dropbox.com/sh/ry0klyksjk22mtu/AAAhi1BvfHZnpjK16tfuZmnUa?dl=0. 
 
 After obtaining the corresponding train, validation, and test sets, please put them in the …/tda_data/tda_PEMS0X folder (X can be 4 or 8).
-

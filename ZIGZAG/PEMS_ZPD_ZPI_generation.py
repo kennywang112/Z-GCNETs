@@ -2,13 +2,14 @@ import os
 import numpy as np
 import pandas as pd
 import networkx as nx
-import zigzag.zigzagtools as zzt
+import zigzag as zzt
 from scipy.spatial.distance import squareform
 import dionysus as d
 import time
 path = os.getcwd()
 
 def split_data_by_ratio(data, val_ratio, test_ratio):
+    
     data_len = data.shape[0]
     test_data = data[-int(data_len*test_ratio):]
     val_data = data[-int(data_len*(test_ratio+val_ratio)):-int(data_len*test_ratio)]
@@ -16,6 +17,7 @@ def split_data_by_ratio(data, val_ratio, test_ratio):
     return train_data, val_data, test_data
 
 def load_st_fulldataset(dataset, val_ratio, test_ratio):
+
     #output B, N, D
     if dataset == 'PEMSD4':
         data_path = os.path.join(path + '/data/PEMS04/PEMS04.npz')
@@ -40,8 +42,10 @@ scaleParameter = 1.0 # Scale Parameter (Maximum) # the maximal edge weight
 maxDimHoles = 2 # Maximum Dimension of Holes (It means.. 0 and 1)
 sizeWindow = 12 # Number of Graphs
 
+# 從當下往後滑動
 # Zigzag persistence diagram (ZPD) for the regular sliding window
 def zigzag_persistence_diagrams(dataset, index, alpha, NVertices, scaleParameter, maxDimHoles, sizeWindow, train = True, val = False, val_ratio = None, test_ratio = None):
+    
     train_data, val_data, test_data = load_st_fulldataset(dataset=dataset, val_ratio = val_ratio, test_ratio = test_ratio)
     if train:
         PEMS_features = train_data
@@ -102,6 +106,7 @@ def zigzag_persistence_diagrams(dataset, index, alpha, NVertices, scaleParameter
         # --- To concatenate graphs
         unionAux = []
         MDisAux = np.zeros((2 * NVertices, 2 * NVertices))
+        #  將相鄰圖合併（graph union），製作距離矩陣
         A = nx.adjacency_matrix(GraphsNetX[i]).todense()
         B = nx.adjacency_matrix(GraphsNetX[i + 1]).todense()
         # ----- Version Original (2)
@@ -125,10 +130,10 @@ def zigzag_persistence_diagrams(dataset, index, alpha, NVertices, scaleParameter
 
     # To perform Ripser computations
     print("Computing Vietoris-Rips complexes...")  # Beginning
-
     GVRips = []
     for jj in range(0, sizeWindow - 1):
         print(jj)
+        # 計算 VR complex
         ripsAux = d.fill_rips(MDisGUnions[jj], maxDimHoles, scaleParameter)
         GVRips.append(ripsAux)
     print("  --- End Vietoris-Rips computation")  # Ending
@@ -180,9 +185,10 @@ def zigzag_persistence_diagrams(dataset, index, alpha, NVertices, scaleParameter
 
     return window_ZPD
 
-
+# 從當下往前回溯
 # Zigzag persistence diagram (ZPD) for the nested sliding window
 def nested_zigzag_persistence_diagrams(dataset, index, alpha, NVertices, scaleParameter, maxDimHoles, sizeWindow, train = True, val = False, val_ratio = None, test_ratio = None):
+
     train_data, val_data, test_data = load_st_fulldataset(dataset=dataset, val_ratio = val_ratio, test_ratio = test_ratio)
     if train:
         PEMS_features = train_data
@@ -324,6 +330,7 @@ def nested_zigzag_persistence_diagrams(dataset, index, alpha, NVertices, scalePa
 
 # Zigzag persistence image
 def zigzag_persistence_images(dgms, resolution = [50,50], return_raw = False, normalization = True, bandwidth = 1., power = 1., dimensional = 0):
+
     PXs, PYs = np.vstack([dgm[:, 0:1] for dgm in dgms]), np.vstack([dgm[:, 1:2] for dgm in dgms])
     xm, xM, ym, yM = PXs.min(), PXs.max(), PYs.min(), PYs.max()
     x = np.linspace(xm, xM, resolution[0])

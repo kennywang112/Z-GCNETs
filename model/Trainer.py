@@ -9,8 +9,12 @@ from logger import get_logger
 from metrics import All_Metrics
 
 class Trainer(object):
-    def __init__(self, model, loss, optimizer, train_loader, val_loader, test_loader,
-                 scaler, args, lr_scheduler=None):
+
+    def __init__(
+            self, model, loss, optimizer, 
+            train_loader, val_loader, test_loader,
+            scaler, args, lr_scheduler=None):
+        
         super(Trainer, self).__init__()
         self.model = model
         self.loss = loss
@@ -31,25 +35,26 @@ class Trainer(object):
             os.makedirs(args.log_dir, exist_ok=True)
         self.logger = get_logger(args.log_dir, name=args.model, debug=args.debug)
         self.logger.info('Experiment log path in: {}'.format(args.log_dir))
-        #if not args.debug:
-        #self.logger.info("Argument: %r", args)
+        # if not args.debug:
+        # self.logger.info("Argument: %r", args)
         # for arg, value in sorted(vars(args).items()):
         #     self.logger.info("Argument %s: %r", arg, value)
 
     def val_epoch(self, epoch, val_dataloader):
+
         self.model.eval()
         total_val_loss = 0
 
         with torch.no_grad():
             for batch_idx, (ori_data, PI_data, target) in enumerate(val_dataloader):
                 data = ori_data[..., :self.args.input_dim] # input_dim = 3
-                #x_full = ori_data[..., :self.args.input_dim]
+                # x_full = ori_data[..., :self.args.input_dim]
                 label = target[..., :self.args.output_dim]
                 output = self.model(data, target, PI_data, teacher_forcing_ratio=0.)
                 if self.args.real_value:
                     label = self.scaler.inverse_transform(label)
                 loss = self.loss(output.cuda(), label)
-                #a whole batch of Metr_LA is filtered
+                # a whole batch of Metr_LA is filtered
                 if not torch.isnan(loss):
                     total_val_loss += loss.item()
         val_loss = total_val_loss / len(val_dataloader)
@@ -57,6 +62,7 @@ class Trainer(object):
         return val_loss
 
     def train_epoch(self, epoch):
+
         self.model.train()
         total_loss = 0
         for batch_idx, (ori_data, PI_data, target) in enumerate(self.train_loader):
@@ -64,13 +70,14 @@ class Trainer(object):
             label = target[..., :self.args.output_dim]  # (..., 1)
             self.optimizer.zero_grad()
 
-            #teacher_forcing for RNN encoder-decoder model
-            #if teacher_forcing_ratio = 1: use label as input in the decoder for all steps
+            # teacher_forcing for RNN encoder-decoder model
+            # if teacher_forcing_ratio = 1: use label as input in the decoder for all steps
             if self.args.teacher_forcing:
                 global_step = (epoch - 1) * self.train_per_epoch + batch_idx
                 teacher_forcing_ratio = self._compute_sampling_threshold(global_step, self.args.tf_decay_steps)
             else:
                 teacher_forcing_ratio = 1.
+            # topology model
             output = self.model(data, target, PI_data, teacher_forcing_ratio=teacher_forcing_ratio)
             if self.args.real_value:
                 label = self.scaler.inverse_transform(label)
@@ -83,44 +90,47 @@ class Trainer(object):
             self.optimizer.step()
             total_loss += loss.item()
 
-            #log information
+            # log information
             if batch_idx % self.args.log_step == 0:
                 self.logger.info('Train Epoch {}: {}/{} Loss: {:.6f}'.format(
                     epoch, batch_idx, self.train_per_epoch, loss.item()))
         train_epoch_loss = total_loss/self.train_per_epoch
         self.logger.info('**********Train Epoch {}: averaged Loss: {:.6f}, tf_ratio: {:.6f}'.format(epoch, train_epoch_loss, teacher_forcing_ratio))
 
-        #learning rate decay
+        # learning rate decay
         if self.args.lr_decay:
             self.lr_scheduler.step()
         return train_epoch_loss
 
     def train(self):
+
         best_model = None
         best_loss = float('inf')
         not_improved_count = 0
         train_loss_list = []
         val_loss_list = []
         start_time = time.time()
-        for epoch in range(1, self.args.epochs + 1): # 总 epochs
-            #epoch_time = time.time()
+
+        for epoch in range(1, self.args.epochs + 1): # total epochs
+            # epoch_time = time.time()
             train_epoch_loss = self.train_epoch(epoch)
-            #print(time.time()-epoch_time)
-            #exit()
+            # print(time.time()-epoch_time)
+            # exit()
             if self.val_loader == None:
                 val_dataloader = self.test_loader
             else:
                 val_dataloader = self.val_loader
             val_epoch_loss = self.val_epoch(epoch, val_dataloader)
 
-            #print('LR:', self.optimizer.param_groups[0]['lr'])
+            # print('LR:', self.optimizer.param_groups[0]['lr'])
             train_loss_list.append(train_epoch_loss)
             val_loss_list.append(val_epoch_loss)
+
             if train_epoch_loss > 1e6:
                 self.logger.warning('Gradient explosion detected. Ending...')
                 break
-            #if self.val_loader == None:
-            #val_epoch_loss = train_epoch_loss
+            # if self.val_loader == None:
+            # val_epoch_loss = train_epoch_loss
             if val_epoch_loss < best_loss:
                 best_loss = val_epoch_loss
                 not_improved_count = 0
@@ -136,6 +146,7 @@ class Trainer(object):
                     break
             # save the best state
             if best_state == True:
+
                 self.logger.info('*********************************Current best model saved!')
                 best_model = copy.deepcopy(self.model.state_dict())
 
@@ -148,17 +159,19 @@ class Trainer(object):
         training_time = time.time() - start_time
         self.logger.info("Total training time: {:.4f}min, best loss: {:.6f}".format((training_time / 60), best_loss))
 
-        #save the best model to file
+        # save the best model to file
         if not self.args.debug:
+
             torch.save(best_model, self.best_path)
             self.logger.info("Saving current best model to " + self.best_path)
 
-        #test
+        # test
         self.model.load_state_dict(best_model)
-        #self.val_epoch(self.args.epochs, self.test_loader)
+        # self.val_epoch(self.args.epochs, self.test_loader)
         self.test(self.model, self.args, self.test_loader, self.scaler, self.logger)
 
     def save_checkpoint(self):
+
         state = {
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
@@ -169,6 +182,7 @@ class Trainer(object):
 
     @staticmethod
     def test(model, args, data_loader, scaler, logger, path=None):
+
         if path != None:
             check_point = torch.load(path)
             state_dict = check_point['state_dict']
@@ -178,6 +192,7 @@ class Trainer(object):
         model.eval()
         y_pred = []
         y_true = []
+
         with torch.no_grad():
             for batch_idx, (ori_data, PI_data, target) in enumerate(data_loader):
                 data = ori_data[..., :args.input_dim]
@@ -187,12 +202,14 @@ class Trainer(object):
                 y_true.append(label)
                 y_pred.append(output)
         y_true = scaler.inverse_transform(torch.cat(y_true, dim=0))
+
         if args.real_value:
             y_pred = torch.cat(y_pred, dim=0)
         else:
             y_pred = scaler.inverse_transform(torch.cat(y_pred, dim=0))
         np.save('./{}_true.npy'.format(args.dataset), y_true.cpu().numpy())
         np.save('./{}_pred.npy'.format(args.dataset), y_pred.cpu().numpy())
+
         for t in range(y_true.shape[1]):
             mae, rmse, mape, _, _ = All_Metrics(y_pred[:, t, ...], y_true[:, t, ...],
                                                 args.mae_thresh, args.mape_thresh)
@@ -204,6 +221,7 @@ class Trainer(object):
 
     @staticmethod
     def _compute_sampling_threshold(global_step, k):
+        
         """
         Computes the sampling probability for scheduled sampling using inverse sigmoid.
         :param global_step:
